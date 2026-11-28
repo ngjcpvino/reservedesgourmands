@@ -1118,12 +1118,12 @@ select.champ {
 ------------------------------------------------------------ */
 .ligne-couleur { display: flex; align-items: center; gap: var(--espace-s); }
 .ligne-couleur > .champ { flex: 1; min-width: 0; }   /* une liste aux longs noms ne pousse pas le bouton scanner hors du cadre */
-.pastille { flex-shrink: 0; width: var(--pastille); height: var(--pastille); border-radius: var(--rayon); border: var(--filet) solid var(--champ-bord); }
+.pastille { flex-shrink: 0; width: var(--pastille); height: var(--pastille); border-radius: var(--rayon); border: var(--filet) solid var(--champ-bord); background: var(--c); }   /* --c : sa couleur, posée par le script (une donnée) */
 /* LE NUANCIER (l'utilisateur, 2026-10-05, choix B sur aperçu) : chaque couleur, une puce de peinture — le numéro écrit sur la couleur (crème, brun
    foncé sur une couleur pâle), son hex dessous, à changer; « où elle sert » retiré (l'utilisateur : « pas utile »). */
 .puces { display: grid; grid-template-columns: repeat(var(--puces-colonnes), minmax(0, 1fr)); gap: var(--espace-m); padding: var(--espace-s) var(--espace-l) var(--espace-m) 0; }
 .puce { border-radius: var(--rayon); overflow: hidden; background: var(--couleur-101); box-shadow: var(--ombre-carte); }
-.puce-couleur { display: flex; align-items: flex-end; height: var(--puce-haut); padding: var(--espace-s); font-size: var(--texte-moyen); font-weight: var(--poids-fort); color: var(--couleur-105); }
+.puce-couleur { background: var(--c); display: flex; align-items: flex-end; height: var(--puce-haut); padding: var(--espace-s); font-size: var(--texte-moyen); font-weight: var(--poids-fort); color: var(--couleur-105); }
 .puce-couleur.puce-pale { color: var(--couleur-306); }
 .puce .champ-hex { width: 100%; min-height: 0; padding: var(--espace-s); border: none; border-top: var(--filet) solid var(--champ-bord); border-radius: 0; font-size: var(--texte-petit); text-align: center; }
 /* Choisir une couleur de la palette (pièces, meubles, catégories, épiceries) : une grille de pastilles à toucher. */

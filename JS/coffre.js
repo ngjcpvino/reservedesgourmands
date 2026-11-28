@@ -50,7 +50,7 @@ const Coffre = {
     } catch (e) {
       const s = Math.round((Date.now() - debut) / 1000);
       throw e.name === 'AbortError' ? this._echec('pas de réponse en ' + s + ' s', 'delai')
-                                    : this._echec('communication coupée après ' + s + ' s (' + e.message + ')', 'reseau');
+                                    : this._echec('communication coupée après ' + s + ' s', 'reseau');   // la raison du navigateur (« Load failed ») est en anglais : en français, partout
     } finally { if (minuterie) clearTimeout(minuterie); }
     try { return JSON.parse(texte); }
     catch (e) {

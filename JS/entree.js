@@ -50,7 +50,6 @@ var envoiGestes = false;                            // la file des gestes est en
 var ACHATS = [];                                    // onglet Achats : [ID, ProduitID, Marque, Saveur, Etat, Date, Qui, Actif] — la liste d'achats;
                                                     // un solde choisi (Etat « solde ») en a plus : · Magasin · Fin · Cle · Texte · Categorie · Prix · Regulier · Unite · Format
 var CAT_CIRC = {};                                  // references.categoriesCirc : { clé d'un article de circulaire : sa catégorie, corrigée au crayon } (JS/prix.js)
-const MENAGE = 'rdg_menage';                        // l'heure du dernier grand ménage vu par CET appareil (references.menage)
 const ATTENTE_ACHATS = 'rdg_achats_attente';        // ce qui a été coché, ajouté, mis de côté, pas encore confirmé
 var envoiAchats = false;                            // la file de la liste d'achats est en route
 var EPICERIES = [];                                 // toute l'épicerie : les listes pas encore closes [ID, Magasin, Date, Etat (O · T · C), Qui] (JS/epicerie.js)
@@ -630,10 +629,6 @@ async function chargerReferences() {
     poserOrdresAliments(data.prods, lireAttenteAliments());   // idem pour l'ordre des endroits d'un aliment
     poserOrdresCats(data.cats, lireAttenteCats());            // idem pour l'ordre des catégories
     data.stock = data.stock || []; data.pasAimes = data.pasAimes || []; data.epiceries = data.epiceries || [];
-    if (data.menage && data.menage !== localStorage.getItem(MENAGE)) {   // le grand ménage (api.gs viderReserve) : ce qui attendait d'avant ne repart pas
-      ecrireAttenteGestes([]); ecrireAttenteAchats([]);
-      try { localStorage.setItem(MENAGE, data.menage); localStorage.removeItem(EPI_CACHE_CIRC); localStorage.removeItem(CACHE_TRI); } catch (e) {}   // + les circulaires gardées (leurs liens au tri), les tris gardés (effacés)
-    }
     lireAttenteGestes().forEach(e => appliquerGeste(e, data));   // idem : un geste en route reste fait
     data.achats = data.achats || []; data.speciaux = data.speciaux || [];
     lireAttenteAchats().forEach(e => { if (e.lignes) poserLignesAchats(e.lignes, data.achats); });   // idem pour la liste d'achats
@@ -692,7 +687,7 @@ async function chargerData(suivi) {
     if (suivi) suivi(i);
     try {
       const r = await Coffre.references(ESSAIS_LECTURE[i]);
-      if (r && r.ok && r.categories !== undefined) return { cats: r.categories, emps: r.emplacements, prods: r.produits, stock: r.stock, variantes: r.variantes, codes: r.codes, codesTri: r.codesTri, couleurs: r.couleurs, listes: r.listes, pasAimes: r.pasAimes, achats: r.achats, speciaux: r.speciaux, prixReguliers: r.prixReguliers, nbATrier: r.nbATrier, epiceries: r.epiceries, menage: r.menage, off: r.off, sortesTri: r.sortesTri, photos: r.photos, categoriesCirc: r.categoriesCirc };   // tout ce que l'app lit : un oubli ici = une donnée qui n'arrive jamais
+      if (r && r.ok && r.categories !== undefined) return { cats: r.categories, emps: r.emplacements, prods: r.produits, stock: r.stock, variantes: r.variantes, codes: r.codes, codesTri: r.codesTri, couleurs: r.couleurs, listes: r.listes, pasAimes: r.pasAimes, achats: r.achats, speciaux: r.speciaux, prixReguliers: r.prixReguliers, nbATrier: r.nbATrier, epiceries: r.epiceries, off: r.off, sortesTri: r.sortesTri, photos: r.photos, categoriesCirc: r.categoriesCirc };   // tout ce que l'app lit : un oubli ici = une donnée qui n'arrive jamais
       if (r && r.erreur === 'non autorisé') throw new Error('non autorisé');   // inutile de réessayer
       err = new Error((r && r.erreur) || 'refus'); err.refus = true;          // le coffre-fort a répondu, mais pas oui
     } catch (e) { if (e.message === 'non autorisé') throw e; err = e; }
@@ -1527,11 +1522,7 @@ async function enregistrer() {
       oublierNeuves();                                    // ajoutés puis abandonnés (on a changé d'idée) : jamais créés
       marque = fin(marque); saveur = fin(saveur);
     }
-    else if (r && r.erreur === 'action inconnue') {        // repli si coffre-fort pas encore à jour
-      if (nouveau) { const p = await Coffre.ajouter('Produits', ['', nom, scid, '', 'O', '', '']); if (!p.ok) throw new Error(p.erreur || 'refus'); produitId = p.id; }
-      const date = dateDuJour();
-      for (const e of endroits) await Coffre.ajouter('Stock', ['', produitId, e.emp, e.qte, date, marque, e.format || format, opCourant, code, saveur, qui, magasin, prix]);
-    } else { throw new Error((r && r.erreur) || 'refus'); }
+    else throw new Error((r && r.erreur) || 'refus');      // (le repli d'avant entrerArticle, septembre, retiré le 2026-11-28 : il écrivait sans jeton)
     if (nouveau) {
       PRODUITS.push({ id: produitId, nom: nom, catId: scid });
       const c = lireCache(); if (c) { (c.prods = c.prods || []).push([produitId, nom, scid, '', 'O', '', '']); ecrireCache(c); }
@@ -5615,14 +5606,14 @@ function couleurActuelle(nom) {
 /* Les pastilles de la palette, à toucher (pièces, meubles, catégories, épiceries). La choisie est cerclée. */
 function htmlPalette(choisi) {
   return numerosPalette().map(n => '<button class="pastille pastille-choix' + (n === choisi ? ' pastille-choisie' : '') + '" type="button" data-num="' + n +
-    '" style="background:var(--couleur-' + n + ')" aria-label="Couleur ' + n + '"></button>').join('');
+    '" style="--c:var(--couleur-' + n + ')" aria-label="Couleur ' + n + '"></button>').join('');   // la couleur (une donnée) : --c; le fond, le CSS
 }
 /* La couleur qui a déjà ce hex (« une couleur est une couleur et a son hex » : l'utilisateur, 2026-10-05), sauf sauf; '' = aucune. */
 const numeroDuHex = (v, sauf) => numerosPalette().find(n => n !== sauf && couleurActuelle('couleur-' + n) === v) || '';
 /* LE NUANCIER (l'utilisateur, 2026-10-05, choix B sur aperçu) : une puce de peinture — le numéro écrit sur la couleur, son hex dessous. */
 function htmlPuce(n) {
   const v = couleurActuelle('couleur-' + n);
-  return '<div class="puce"><div class="puce-couleur' + (couleurPale(v) ? ' puce-pale' : '') + '" style="background:var(--couleur-' + n + ')">' + n + '</div>' +
+  return '<div class="puce"><div class="puce-couleur' + (couleurPale(v) ? ' puce-pale' : '') + '" style="--c:var(--couleur-' + n + ')">' + n + '</div>' +
     '<input class="champ champ-hex" data-site="couleur-' + n + '" value="' + esc(v) + '" maxlength="7" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="#rrggbb"></div>';
 }
 /* L'écran Couleurs : les familles, chacune peinte de la couleur qui la représente (FAMILLES); ouverte, ses puces puis « Nouvelle couleur… ».
